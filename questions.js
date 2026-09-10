@@ -1,18 +1,79 @@
+// questions.js - EMT 緊急救護員題目資料庫
 window.allQuestions = [
+  // ----------------------------------------------------
+  // 第一章：創傷評估與 XABCDE 流程
+  // ----------------------------------------------------
   {
-    id: "ch1_q1",
-    chapter: "第一章",
-    question: "下列關於變數宣告何者正確？",
-    options: ["const 可重新指定值", "let 具區塊作用域", "var 不會 Hoisting", "以上皆非"],
-    answer: 1, // 正確答案是第幾個選項 (從 0 開始算，1 代表第二個選項)
-    explanation: "let 與 const 都具有區塊作用域。"
+    id: "emt_ch1_q1",
+    chapter: "第一章：創傷評估與生命徵象",
+    question: "在創傷現場執行初評時，XABCDE 流程中的「X」代表下列何者優先處置？",
+    options: [
+      "開啟氣道 (Airway)",
+      "大出血處置 (Exsanguinating Hemorrhage)",
+      "呼吸評估 (Breathing)",
+      "神經學檢查 (Disability)"
+    ],
+    answer: 1, // 答案：B
+    explanation: "XABCDE 中的 X 代表 Catastrophic/Exsanguinating Hemorrhage（致死性大出血），需優先使用止血帶或壓迫止血。"
   },
   {
-    id: "ch1_q2",
-    chapter: "第一章",
-    question: "typeof null 回傳什麼？",
-    options: ["null", "undefined", "object", "number"],
-    answer: 2,
-    explanation: "typeof null 會回傳 object。"
+    id: "emt_ch1_q2",
+    chapter: "第一章：創傷評估與生命徵象",
+    question: "出現「血壓升高、心跳過緩、呼吸不規則」的現象時，通常代表病人有何狀況？",
+    options: [
+      "柯興氏三聯症 (Cushing's Triad) - 顱內壓升高",
+      "貝克氏三聯症 (Beck's Triad) - 心包填塞",
+      "張力性氣胸 (Tension Pneumothorax)",
+      "低血容性休克 (Hypovolemic Shock)"
+    ],
+    answer: 0, // 答案：A
+    explanation: "Cushing's Triad 包括收縮壓升高（脈壓差變大）、心跳過緩與呼吸不規則，為顱內壓升高（ICP 增加）的典型徵象。"
+  },
+
+  // ----------------------------------------------------
+  // 第二章：急救藥理與內科急症
+  // ----------------------------------------------------
+  {
+    id: "emt_ch2_q1",
+    chapter: "第二章：急症處置與藥理原則",
+    question: "救護人員協助缺血性胸痛病人使用舌下硝酸甘油 (NTG) 時，下列何者為絕對禁忌症？",
+    options: [
+      "收縮壓大於 100 mmHg",
+      "病人伴隨呼吸急促",
+      "收縮壓小於 90 mmHg 或 24-48 小時內曾使用壯陽藥物",
+      "病人年齡大於 65 歲"
+    ],
+    answer: 2, // 答案：C
+    explanation: "收縮壓低於 90 mmHg 或近期使用過 PDE-5 抑制劑（如威而鋼等壯陽藥）為 NTG 的禁忌症，可能引發致命性低血壓。"
+  },
+  {
+    id: "emt_ch2_q2",
+    chapter: "第二章：急症處置與藥理原則",
+    question: "低血糖（血糖值 < 60 mg/dL）且意識清醒、能配合吞嚥的病人，第一線處置應給予下列何者？",
+    options: [
+      "肌肉注射 Epinephrine",
+      "口服糖水或葡萄糖膠",
+      "靜脈注射 0.9% Normal Saline 500ml",
+      "給予高濃度氧氣即可"
+    ],
+    answer: 1, // 答案：B
+    explanation: "意識清醒且具吞嚥反射的低血糖病人，應優先口服給予補充糖分（如葡萄糖膠）。"
+  },
+
+  // ----------------------------------------------------
+  // 第三章：呼吸與特殊急症
+  // ----------------------------------------------------
+  {
+    id: "emt_ch3_q1",
+    chapter: "第三章：特殊急症與處置",
+    question: "當懷疑病人為張力性氣胸且出現嚴重呼吸困難、單側呼吸音消失及頸靜脈怒張時，下列處置何者最合適？",
+    options: [
+      "給予高濃度氧氣並快速送醫，並通知加護救護車或進行胸針減壓處置",
+      "使用加壓包紮患側胸壁",
+      "請病人深呼吸並以口對口吹氣",
+      "給予口服 NTG"
+    ],
+    answer: 0, // 答案：A
+    explanation: "張力性氣胸為急迫致命傷，除給予高濃度氧氣與快速送醫外，具相應權限之 EMT-2/TP 需評估執行胸針減壓。"
   }
 ];
