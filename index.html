@@ -1,218 +1,354 @@
-// index.html 中的 script 部分，請用這個完整的 notesData 替換
-const notesData = {
-  "ch1": {
-    title: "第一章：緊急醫療救護體系概論",
-    content: `# 第一章：緊急醫療救護體系概論
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMT 緊急救護員 學習與題庫系統</title>
+  <!-- Tailwind CSS & Marked.js -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    .markdown-body h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a; }
+    .markdown-body h2 { font-size: 1.35rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.25rem; }
+    .markdown-body p { margin-bottom: 1rem; line-height: 1.7; color: #334155; }
+    .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #334155; }
+    .markdown-body li { margin-bottom: 0.5rem; }
+    .markdown-body code { background-color: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; color: #0284c7; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col">
 
-## 1. EMT 職責與體系
-* **主要任務**：現場評估、急救處置、安全送醫、紀錄與回報。
-* **生命連鎖 (Chain of Survival)**：
-  1. 早期求救 (119)
-  2. 早期 CPR
-  3. 早期 AED 去顫
-  4. 早期高級心臟救命術 (ACLS)
-  5. 心臟停止後照護與復原
+  <!-- 頂部主功能導覽列 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto flex">
+      <button id="tab-note" onclick="switchMainTab('note')" class="flex-1 py-4 text-center font-bold border-b-2 border-indigo-600 text-indigo-600 transition">
+        📖 章節重點整理
+      </button>
+      <button id="tab-quiz" onclick="switchMainTab('quiz')" class="flex-1 py-4 text-center font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
+        📝 章節測驗
+      </button>
+      <button id="tab-wrong" onclick="switchMainTab('wrong')" class="flex-1 py-4 text-center font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
+        📚 錯題本 (<span id="wrong-count">0</span>)
+      </button>
+    </div>
+  </header>
 
-## 2. 法律與倫理
-* **知情同意**：針對清醒且具自主能力的成人，處置前需說明並取得同意。
-* **拒絕送醫**：清醒成人有權拒絕，救護人員應充分告知風險並簽署「拒絕送醫同意書」。`
-  },
-  "ch2": {
-    title: "第二章：人體構造與生理基礎",
-    content: `# 第二章：人體構造與生理基礎
+  <!-- 主內容區 -->
+  <main class="max-w-6xl w-full mx-auto p-4 md:p-6 flex-1 flex gap-6">
 
-## 1. 解剖姿勢與方向
-* **標準解剖姿勢**：身體直立、雙眼平視、雙手下垂且**掌心朝前**。
-* **常用方位術語**：
-  * **近端 (Proximal)**：較靠近軀幹或附著點。
-  * **遠端 (Distal)**：較遠離軀幹或附著點。
+    <!-- 區塊 A：18 章重點閱讀模式 -->
+    <div id="view-note-wrapper" class="w-full flex flex-col md:flex-row gap-6">
+      <!-- 側邊欄：18 章選單 -->
+      <aside class="w-full md:w-72 bg-white p-4 rounded-xl border border-slate-200 shadow-sm shrink-0 h-fit max-h-[80vh] overflow-y-auto">
+        <h2 class="font-bold text-slate-700 mb-3 text-sm tracking-wider uppercase border-b pb-2">EMT 講義章節目錄 (全18章)</h2>
+        <ul id="chapter-list" class="space-y-1"></ul>
+      </aside>
 
-## 2. 人體主要系統
-* **循環系統**：心臟、血管、血液；提供組織氧氣與養分。
-* **呼吸系統**：氣管、支氣管、肺泡；執行氣體交換 (O₂/CO₂)。
-* **神經系統**：中樞（腦、脊髓）與周邊神經；控制生命徵象與感覺運動。`
-  },
-  "ch3": {
-    title: "第三章：現場安全與感染控制",
-    content: `# 第三章：現場安全與感染控制
+      <!-- 文章內容展示區 -->
+      <section class="flex-1 bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm min-h-[500px]">
+        <div id="markdown-content" class="markdown-body"></div>
+      </section>
+    </div>
 
-## 1. 現場安全 (Scene Safety)
-* **第一優先**：救護人員自身的安全永遠高於一切，其次才是搭檔、民眾與傷患。
-* **環境危險**：火災、車流、倒塌、有毒物質、暴力傾向民眾。
+    <!-- 區塊 B：測驗與錯題本模式 -->
+    <div id="view-quiz-wrapper" class="w-full max-w-3xl mx-auto hidden">
+      <div class="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex justify-between items-center mb-4 text-sm font-medium text-slate-500">
+          <span id="quiz-chapter-title">章節測驗</span>
+          <span id="quiz-progress">第 1 / 1 題</span>
+        </div>
 
-## 2. 感染控制與 PPE
-* **個人防護裝備 (PPE)**：手套（每位病人更換）、外科口罩、護目鏡/面罩、防護衣。
-* **針扎處置**：由近心端向遠端輕擠傷口出血，以流動水及肥皂徹底清洗，並立即通報記錄。`
-  },
-  "ch4": {
-    title: "第四章：病人評估（初評與次評）",
-    content: `# 第四章：病人評估（初評與次評）
+        <h2 id="question-text" class="text-lg md:text-xl font-bold mb-6 text-slate-900 leading-relaxed">
+          載入中...
+        </h2>
 
-## 1. 初級評估 (XABCDE)
-* **X (Exsanguinating Hemorrhage)**：致死性大出血優先止血。
-* **A (Airway)**：維持氣道通暢（無創傷壓額抬下巴；創傷用提下頷法）。
-* **B (Breathing)**：評估呼吸頻率與深度，必要時給氧或 BVM 通氣。
-* **C (Circulation)**：檢查脈搏、皮膚顏色/溫度、微血管充盈時間 (CRT < 2秒)。
-* **D (Disability)**：GCS 評估、瞳孔對光反應。
-* **E (Exposure)**：暴露檢查傷勢並注意保暖。
+        <div id="options-container" class="space-y-3 mb-6"></div>
 
-## 2. 病史詢問 (SAMPLE)
-* **S**：Signs/Symptoms（症狀與徵象）
-* **A**：Allergies（過敏史）
-* **M**：Medications（正在使用的藥物）
-* **P**：Past medical history（過去病史）
-* **L**：Last oral intake（最後進食時間）
-* **E**：Events preceding（事件經過）`
-  },
-  "ch5": {
-    title: "第五章：氣道管理與呼吸急症",
-    content: `# 第五章：氣道管理與呼吸急症
+        <div id="explanation-box" class="hidden p-4 rounded-xl mb-6 text-sm">
+          <p id="result-status" class="font-bold text-base mb-1"></p>
+          <p id="explanation-text" class="leading-relaxed"></p>
+        </div>
 
-## 1. 輔助氣道器材
-* **口咽氣道 (OPA)**：用於**無嘔吐反射/昏迷**患者。量測方式：病人口角至耳垂或下頷角。
-* **鼻咽氣道 (NPA)**：用於半清醒或有嘔吐反射者。**禁忌症：懷疑顱底骨折/面部重創**。
+        <div class="flex justify-end">
+          <button id="next-btn" onclick="nextQuestion()" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl transition">
+            下一題 ➔
+          </button>
+        </div>
+      </div>
+    </div>
 
-## 2. 給氧器材標準
-* **鼻導管 (NC)**：流速 2–6 L/min，氧氣濃度約 24–44%。
-* **未濃縮面罩 (NRM)**：流速 **12–15 L/min**，儲氣袋需保持充氣，氧氣濃度可達 80–90% 以上。`
-  },
-  "ch6": {
-    title: "第六章：心律不整與 CPR / AED 操作",
-    content: `# 第六章：心律不整與 CPR / AED 操作
+    <!-- 區塊 C：無錯題提示 -->
+    <div id="view-empty-wrapper" class="w-full max-w-xl mx-auto hidden text-center py-16 bg-white rounded-xl border border-slate-200 shadow-sm">
+      <div class="text-6xl mb-4">🎉</div>
+      <h3 class="text-xl font-bold text-slate-800 mb-2">太棒了！目前沒有任何錯題</h3>
+      <p class="text-slate-500 text-sm">在測驗中答錯的題目，會自動收集到這裡供您複習。</p>
+    </div>
 
-## 1. 高品質 CPR 要點
-* **速率**：100–120 次/分鐘。
-* **深度**：成人至少 5 公分（不超過 6 公分）。
-* **原則**：按壓後胸廓完全回彈、儘量減少中斷（< 10秒）、避免過度通氣。
+  </main>
 
-## 2. AED 操作
-* **分析心律**：電擊貼片貼於右上（鎖骨下）與左下（腋中線）。
-* **可電擊心律**：心室顫動 (VF) 與 無脈搏心室頻脈 (Pulseless VT)。`
-  },
-  "ch7": {
-    title: "第七章：休克與循環系統急症",
-    content: `# 第七章：休克與循環系統急症
+  <!-- 引入題目檔 (與 index.html 同目錄) -->
+  <script src="questions.js"></script>
 
-## 1. 休克四種類型
-* **低血容性休克**：大量失血、脫水。
-* **心因性休克**：心肌梗塞、心律不整導致心臟泵血衰竭。
-* **分布性休克**：過敏性休克、敗血性休克、神經性休克（血管過度擴張）。
-* **阻塞性休克**：張力性氣胸、心包填塞、肺栓塞。
+  <script>
+    // 完整的 18 章 EMT 講義資料結構
+    const notesData = {
+      "ch1": {
+        title: "第一章：緊急醫療救護體系概論",
+        content: `# 第一章：緊急醫療救護體系概論\n\n## 1. EMT 職責與體系\n* **主要任務**：現場評估、急救處置、安全送醫、紀錄與回報。\n* **生命連鎖 (Chain of Survival)**：\n  1. 早期求救 (119)\n  2. 早期 CPR\n  3. 早期 AED 去顫\n  4. 早期高級心臟救命術 (ACLS)\n  5. 心臟停止後照護與復原\n\n## 2. 法律與倫理\n* **知情同意**：針對清醒且具自主能力的成人，處置前需說明並取得同意。\n* **拒絕送醫**：清醒成人有權拒絕，救護人員應充分告知風險並簽署「拒絕送醫同意書」。`
+      },
+      "ch2": {
+        title: "第二章：人體構造與生理基礎",
+        content: `# 第二章：人體構造與生理基礎\n\n## 1. 解剖姿勢與方向\n* **標準解剖姿勢**：身體直立、雙眼平視、雙手下垂且**掌心朝前**。\n* **常用方位術語**：\n  * **近端 (Proximal)**：較靠近軀幹或附著點。\n  * **遠端 (Distal)**：較遠離軀幹或附著點。\n\n## 2. 人體主要系統\n* **循環系統**：心臟、血管、血液；提供組織氧氣與養分。\n* **呼吸系統**：氣管、支氣管、肺泡；執行氣體交換 (O₂/CO₂)。\n* **神經系統**：中樞（腦、脊髓）與周邊神經；控制生命徵象與感覺運動。`
+      },
+      "ch3": {
+        title: "第三章：現場安全與感染控制",
+        content: `# 第三章：現場安全與感染控制\n\n## 1. 現場安全 (Scene Safety)\n* **第一優先**：救護人員自身的安全永遠高於一切，其次才是搭檔、民眾與傷患。\n* **環境危險**：火災、車流、倒塌、有毒物質、暴力傾向民眾。\n\n## 2. 感染控制與 PPE\n* **個人防護裝備 (PPE)**：手套（每位病人更換）、外科口罩、護目鏡/面罩、防護衣。\n* **針扎處置**：由近心端向遠端輕擠傷口出血，以流動水及肥皂徹底清洗，並立即通報記錄。`
+      },
+      "ch4": {
+        title: "第四章：病人評估（初評與次評）",
+        content: `# 第四章：病人評估（初評與次評）\n\n## 1. 初級評估 (XABCDE)\n* **X (Exsanguinating Hemorrhage)**：致死性大出血優先止血。\n* **A (Airway)**：維持氣道通暢（無創傷壓額抬下巴；創傷用提下頷法）。\n* **B (Breathing)**：評估呼吸頻率與深度，必要時給氧或 BVM 通氣。\n* **C (Circulation)**：檢查脈搏、皮膚顏色/溫度、微血管充盈時間 (CRT < 2秒)。\n* **D (Disability)**：GCS 評估、瞳孔對光反應。\n* **E (Exposure)**：暴露檢查傷勢並注意保暖。\n\n## 2. 病史詢問 (SAMPLE)\n* **S**：Signs/Symptoms（症狀與徵象）\n* **A**：Allergies（過敏史）\n* **M**：Medications（正在使用的藥物）\n* **P**：Past medical history（過去病史）\n* **L**：Last oral intake（最後進食時間）\n* **E**：Events preceding（事件經過）`
+      },
+      "ch5": {
+        title: "第五章：氣道管理與呼吸急症",
+        content: `# 第五章：氣道管理與呼吸急症\n\n## 1. 輔助氣道器材\n* **口咽氣道 (OPA)**：用於**無嘔吐反射/昏迷**患者。量測方式：病人口角至耳垂或下頷角。\n* **鼻咽氣道 (NPA)**：用於半清醒或有嘔吐反射者。**禁忌症：懷疑顱底骨折/面部重創**。\n\n## 2. 給氧器材標準\n* **鼻導管 (NC)**：流速 2–6 L/min，氧氣濃度約 24–44%。\n* **未濃縮面罩 (NRM)**：流速 **12–15 L/min**，儲氣袋需保持充氣，氧氣濃度可達 80–90% 以上。`
+      },
+      "ch6": {
+        title: "第六章：心律不整與 CPR / AED 操作",
+        content: `# 第六章：心律不整與 CPR / AED 操作\n\n## 1. 高品質 CPR 要點\n* **速率**：100–120 次/分鐘。\n* **深度**：成人至少 5 公分（不超過 6 公分）。\n* **原則**：按壓後胸廓完全回彈、儘量減少中斷（< 10秒）、避免過度通氣。\n\n## 2. AED 操作\n* **分析心律**：電擊貼片貼於右上（鎖骨下）與左下（腋中線）。\n* **可電擊心律**：心室顫動 (VF) 與 無脈搏心室頻脈 (Pulseless VT)。`
+      },
+      "ch7": {
+        title: "第七章：休克與循環系統急症",
+        content: `# 第七章：休克與循環系統急症\n\n## 1. 休克四種類型\n* **低血容性休克**：大量失血、脫水。\n* **心因性休克**：心肌梗塞、心律不整導致心臟泵血衰竭。\n* **分布性休克**：過敏性休克、敗血性休克、神經性休克（血管過度擴張）。\n* **阻塞性休克**：張力性氣胸、心包填塞、肺栓塞。\n\n## 2. 胸痛與 NTG 給藥\n* **硝酸甘油 (NTG)**：協助缺血性胸痛病人舌下含服。\n* **禁忌症**：收縮壓 **< 90 mmHg**、24–48 小時內使用過壯陽藥物 (PDE-5 抑制劑)。`
+      },
+      "ch8": {
+        title: "第八章：神經系統急症（中風與癲癇）",
+        content: `# 第八章：神經系統急症\n\n## 1. 辛辛那提出院前中風指標 (CPSS)\n* **Facial Droop（臉部下垂）**：請病人露齒微笑，觀察兩側是否對稱。\n* **Arm Drift（手臂下垂）**：雙手向前平舉 10 秒，觀察是否有單側無力下垂。\n* **Abnormal Speech（言語異常）**：請病人重複一句簡單的話，觀察是否口齒不清或無法發音。\n\n## 2. 癲癇處置\n* **發作中**：保持周圍安全、保護頭部，**嚴禁強行將任何物品塞入嘴中**。\n* **發作後**：維持氣道通暢、給予氧氣，採復甦姿勢（若無創傷）。`
+      },
+      "ch9": {
+        title: "第九章：糖尿病與代謝急症",
+        content: `# 第九章：糖尿病與代謝急症\n\n## 1. 高低血糖差異\n* **低血糖 (Hypoglycemia)**：\n  * 血糖值 **< 60 mg/dL**。\n  * 發作迅速、冒冷汗、皮膚蒼白濕冷、震顫、意識混亂。\n  * **處置**：若意識清醒且具吞嚥反射，口服葡萄糖膠或糖水。\n* **高血糖 (Hyperglycemia)**：\n  * 發作較慢、皮膚乾燥發紅、呼氣有水果味 (DKA)、多尿多渴。`
+      },
+      "ch10": {
+        title: "第十章：過敏反應與中毒急症",
+        content: `# 第十章：過敏反應與中毒急症\n\n## 1. 嚴重過敏反應 (Anaphylaxis)\n* **症狀**：皮膚蕁麻疹、喉頭水腫、呼吸道支氣管痙攣、血壓劇降（休克）。\n* **首選藥物**：**Epinephrine (腎上腺素)** 肌肉注射 (IM)。\n\n## 2. 中毒處置原則\n* 確定毒物種類、劑量與時間，保持氣道通暢，評估是否帶同毒物容器送醫。`
+      },
+      "ch11": {
+        title: "第十一章：急腹症與環境急症",
+        content: `# 第十一章：急腹症與環境急症\n\n## 1. 熱急症區分\n* **熱痙攣**：鹽分流失，肌肉疼痛抽搐。\n* **熱衰竭**：大量出汗、頭暈、體溫正常或微高、皮膚濕冷。\n* **熱中暑 (Heat Stroke)**：**體溫 > 40°C**，伴隨**中樞神經神智改變**（昏迷/抽搐），無汗或少汗，危及生命。\n\n## 2. 低體溫與凍傷\n* 低體溫指核心體溫 < 35°C。應配合移至溫暖環境、移去濕衣服、覆蓋毯子進行被動復溫。`
+      },
+      "ch12": {
+        title: "第十二章：創傷總論與軟組織創傷",
+        content: `# 第十二章：創傷總論與軟組織創傷\n\n## 1. 控制出血方法\n* **直接加壓止血法**：首選方法，使用無菌紗布覆蓋傷口直接加壓。\n* **止血帶 (Tourniquet)**：用於肢體大出血且直接加壓無效時。\n  * 綁於傷口上方 5–7 公分（避開關節）。\n  * 標記使用時間 (TQ Time) 於額頭或止血帶上，**嚴禁隨意鬆開**。`
+      },
+      "ch13": {
+        title: "第十三章：骨骼肌肉創傷與固定",
+        content: `# 第十三章：骨骼肌肉創傷與固定\n\n## 1. 副木固定原則\n* 固定範圍必須涵蓋骨折處的**上一個關節與下一個關節**。\n* **CMS 評估**：固定**前**與固定**後**，均需檢查遠端的 **C (Circulation 循環)**、**M (Motor 運動)**、**S (Sensation 感覺)**。`
+      },
+      "ch14": {
+        title: "第十四章：頭脊椎與胸腹部創傷",
+        content: `# 第十四章：頭脊椎與胸腹部創傷\n\n## 1. 關鍵三聯症\n* **柯興氏三聯症 (Cushing's Triad)**：收縮壓升高（脈壓差變大）、心跳過緩、呼吸不規則 ➔ 代表 **顱內壓升高 (ICP)**。\n* **貝克氏三聯症 (Beck's Triad)**：低血壓、頸靜脈怒張、心音遙遠 ➔ 代表 **心包填塞**。\n\n## 2. 胸部創傷\n* **張力性氣胸**：單側呼吸音消失、氣管偏斜、頸靜脈怒張、嚴重休克。`
+      },
+      "ch15": {
+        title: "第十五章：婦產科急症與急產接生",
+        content: `# 第十五章：婦產科急症與急產接生\n\n## 1. 現場接生流程\n* 托住胎頭避免撕裂傷，胎兒產出後**優先清乾淨口鼻氣道、擦乾並保暖**。\n* 臍帶處置：第一結綁於距胎兒臍帶根部約 10–15 公分處，第二結再隔 5 公分，確認無出血後再進行紀錄。`
+      },
+      "ch16": {
+        title: "第十六章：小兒與老年救護特論",
+        content: `# 第十六章：小兒與老年救護特論\n\n## 1. 小兒評估三角 (PAT)\n* **Appearance（外觀）**：肌肉張力、互動性、眼神、哭聲。\n* **Work of Breathing（呼吸工作）**：呼吸聲、鼻翼扇動、胸壁凹陷。\n* **Circulation to Skin（皮膚循環）**：蒼白、斑駁、發紺。`
+      },
+      "ch17": {
+        title: "第十七章：大量傷病患與檢傷分類",
+        content: `# 第十七章：大量傷病患與檢傷分類\n\n## 1. START 檢傷分類系統\n* **第一級（紅單/優先）**：呼吸數率 > 30次/分、CRT > 2秒、或無法遵從指令。\n* **第二級（黃單/延後）**：有生命徵象但無法行走、無試圖生命的危險。\n* **第三級（綠單/輕傷）**：可自行行走者。\n* **第四級（黑單/死亡）**：無呼吸，開啟氣道後仍無呼吸者。`
+      },
+      "ch18": {
+        title: "第十八章：特殊救護情境與搬運救護",
+        content: `# 第十八章：特殊救護情境與搬運救護\n\n## 1. 搬運原則\n* **身體工學**：屈膝平背、雙腳分開與肩同寬、重物緊貼身體。\n* **緊急搬運 (Emergency Move)**：僅限於現場存在**知識致命危險**（如火災、爆炸、毒氣外洩）時使用，快速將傷患拖離現場。`
+      }
+    };
 
-## 2. 胸痛與 NTG 給藥
-* **硝酸甘油 (NTG)**：協助缺血性胸痛病人舌下含服。
-* **禁忌症**：收縮壓 **< 90 mmHg**、24–48 小時內使用過壯陽藥物 (PDE-5 抑制劑)。`
-  },
-  "ch8": {
-    title: "第八章：神經系統急症（中風與癲癇）",
-    content: `# 第八章：神經系統急症
+    let currentChapterKey = 'ch1';
+    let currentMainTab = 'note';
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let selectedOption = null;
 
-## 1. 辛辛那提出院前中風指標 (CPSS)
-* **Facial Droop（臉部下垂）**：請病人露齒微笑，觀察兩側是否對稱。
-* **Arm Drift（手臂下垂）**：雙手向前平舉 10 秒，觀察是否有單側無力下垂。
-* **Abnormal Speech（言語異常）**：請病人重複一句簡單的話，觀察是否口齒不清或無法發音。
+    function initSidebar() {
+      const listEl = document.getElementById('chapter-list');
+      listEl.innerHTML = '';
+      
+      Object.keys(notesData).forEach(key => {
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.id = `side-btn-${key}`;
+        btn.className = "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-100";
+        btn.textContent = notesData[key].title;
+        btn.onclick = () => selectChapter(key);
+        li.appendChild(btn);
+        listEl.appendChild(li);
+      });
 
-## 2. 癲癇處置
-* **發作中**：保持周圍安全、保護頭部，**嚴禁強行將任何物品塞入嘴中**。
-* **發作後**：維持氣道通暢、給予氧氣，採復甦姿勢（若無創傷）。`
-  },
-  "ch9": {
-    title: "第九章：糖尿病與代謝急症",
-    content: `# 第九章：糖尿病與代謝急症
+      selectChapter(currentChapterKey);
+    }
 
-## 1. 高低血糖差異
-* **低血糖 (Hypoglycemia)**：
-  * 血糖值 **< 60 mg/dL**。
-  * 發作迅速、冒冷汗、皮膚蒼白濕冷、震顫、意識混亂。
-  * **處置**：若意識清醒且具吞嚥反射，口服葡萄糖膠或糖水。
-* **高血糖 (Hyperglycemia)**：
-  * 發作較慢、皮膚乾燥發紅、呼氣有水果味 (DKA)、多尿多渴。`
-  },
-  "ch10": {
-    title: "第十章：過敏反應與中毒急症",
-    content: `# 第十章：過敏反應與中毒急症
+    function selectChapter(key) {
+      currentChapterKey = key;
+      Object.keys(notesData).forEach(k => {
+        const btn = document.getElementById(`side-btn-${k}`);
+        if (btn) {
+          btn.className = k === key 
+            ? "w-full text-left px-3 py-2 rounded-lg text-sm font-bold bg-indigo-50 text-indigo-600"
+            : "w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100";
+        }
+      });
+      document.getElementById('markdown-content').innerHTML = marked.parse(notesData[key].content);
+    }
 
-## 1. 嚴重過敏反應 (Anaphylaxis)
-* **症狀**：皮膚蕁麻疹、喉頭水腫、呼吸道支氣管痙攣、血壓劇降（休克）。
-* **首選藥物**：**Epinephrine (腎上腺素)** 肌肉注射 (IM)。
+    function getWrongList() {
+      return JSON.parse(localStorage.getItem('wrong_questions') || '[]');
+    }
 
-## 2. 中毒處置原則
-* 確定毒物種類、劑量與時間，保持氣道通暢，評估是否帶同毒物容器送醫。`
-  },
-  "ch11": {
-    title: "第十一章：急腹症與環境急症",
-    content: `# 第十一章：急腹症與環境急症
+    function saveToWrongList(qId) {
+      let list = getWrongList();
+      if (!list.includes(qId)) {
+        list.push(qId);
+        localStorage.setItem('wrong_questions', JSON.stringify(list));
+      }
+      updateWrongCount();
+    }
 
-## 1. 熱急症區分
-* **熱痙攣**：鹽分流失，肌肉疼痛抽搐。
-* **熱衰竭**：大量出汗、頭暈、體溫正常或微高、皮膚濕冷。
-* **熱中暑 (Heat Stroke)**：**體溫 > 40°C**，伴隨**中樞神經神智改變**（昏迷/抽搐），無汗或少汗，危及生命。
+    function removeFromWrongList(qId) {
+      let list = getWrongList().filter(id => id !== qId);
+      localStorage.setItem('wrong_questions', JSON.stringify(list));
+      updateWrongCount();
+    }
 
-## 2. 低體溫與凍傷
-* 低體溫指核心體溫 < 35°C。應配合移至溫暖環境、移去濕衣服、覆蓋毯子進行被動復溫。`
-  },
-  "ch12": {
-    title: "第十二章：創傷總論與軟組織創傷",
-    content: `# 第十二章：創傷總論與軟組織創傷
+    function updateWrongCount() {
+      document.getElementById('wrong-count').textContent = getWrongList().length;
+    }
 
-## 1. 控制出血方法
-* **直接加壓止血法**：首選方法，使用無菌紗布覆蓋傷口直接加壓。
-* **止血帶 (Tourniquet)**：用於肢體大出血且直接加壓無效時。
-  * 綁於傷口上方 5–7 公分（避開關節）。
-  * 標記使用時間 (TQ Time) 於額頭或止血帶上，**嚴禁隨意鬆開**。`
-  },
-  "ch13": {
-    title: "第十三章：骨骼肌肉創傷與固定",
-    content: `# 第十三章：骨骼肌肉創傷與固定
+    function switchMainTab(tab) {
+      currentMainTab = tab;
 
-## 1. 副木固定原則
-* 固定範圍必須涵蓋骨折處的**上一個關節與下一個關節**。
-* **CMS 評估**：固定**前**與固定**後**，均需檢查遠端的 **C (Circulation 循環)**、**M (Motor 運動)**、**S (Sensation 感覺)**。`
-  },
-  "ch14": {
-    title: "第十四章：頭脊椎與胸腹部創傷",
-    content: `# 第十四章：頭脊椎與胸腹部創傷
+      ['note', 'quiz', 'wrong'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        btn.className = t === tab 
+          ? "flex-1 py-4 text-center font-bold border-b-2 border-indigo-600 text-indigo-600 transition"
+          : "flex-1 py-4 text-center font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition";
+      });
 
-## 1. 關鍵三聯症
-* **柯興氏三聯症 (Cushing's Triad)**：收縮壓升高（脈壓差變大）、心跳過緩、呼吸不規則 ➔ 代表 **顱內壓升高 (ICP)**。
-* **貝克氏三聯症 (Beck's Triad)**：低血壓、頸靜脈怒張、心音遙遠 ➔ 代表 **心包填塞**。
+      document.getElementById('view-note-wrapper').classList.add('hidden');
+      document.getElementById('view-quiz-wrapper').classList.add('hidden');
+      document.getElementById('view-empty-wrapper').classList.add('hidden');
 
-## 2. 胸部創傷
-* **張力性氣胸**：單側呼吸音消失、氣管偏斜、頸靜脈怒張、嚴重休克。`
-  },
-  "ch15": {
-    title: "第十五章：婦產科急症與急產接生",
-    content: `# 第十五章：婦產科急症與急產接生
+      if (tab === 'note') {
+        document.getElementById('view-note-wrapper').classList.remove('hidden');
+      } else {
+        const allQ = window.allQuestions || [];
+        if (tab === 'quiz') {
+          currentQuestions = [...allQ];
+        } else if (tab === 'wrong') {
+          const wrongIds = getWrongList();
+          currentQuestions = allQ.filter(q => wrongIds.includes(q.id));
+        }
 
-## 1. 現場接生流程
-* 托住胎頭避免撕裂傷，胎兒產出後**優先清乾淨口鼻氣道、擦乾並保暖**。
-* 臍帶處置：第一結綁於距胎兒臍帶根部約 10–15 公分處，第二結再隔 5 公分，確認無出血後再進行紀錄。`
-  },
-  "ch16": {
-    title: "第十六章：小兒與老年救護特論",
-    content: `# 第十六章：小兒與老年救護特論
+        if (currentQuestions.length === 0) {
+          document.getElementById('view-empty-wrapper').classList.remove('hidden');
+        } else {
+          document.getElementById('view-quiz-wrapper').classList.remove('hidden');
+          currentIndex = 0;
+          loadQuestion();
+        }
+      }
+    }
 
-## 1. 小兒評估三角 (PAT)
-* **Appearance（外觀）**：肌肉張力、互動性、眼神、哭聲。
-* **Work of Breathing（呼吸工作）**：呼吸聲、鼻翼扇動、胸壁凹陷。
-* **Circulation to Skin（皮膚循環）**：蒼白、斑駁、發紺。`
-  },
-  "ch17": {
-    title: "第十七章：大量傷病患與檢傷分類",
-    content: `# 第十七章：大量傷病患與檢傷分類
+    function loadQuestion() {
+      const q = currentQuestions[currentIndex];
+      selectedOption = null;
 
-## 1. START 檢傷分類系統
-* **第一級（紅單/優先）**：呼吸數率 > 30次/分、CRT > 2秒、或無法遵從指令。
-* **第二級（黃單/延後）**：有生命徵象但無法行走、無立即致命危險。
-* **第三級（綠單/輕傷）**：可自行行走者。
-* **第四級（黑單/死亡）**：無呼吸，開啟氣道後仍無呼吸者。`
-  },
-  "ch18": {
-    title: "第十八章：特殊救護情境與搬運救護",
-    content: `# 第十八章：特殊救護情境與搬運救護
+      document.getElementById('quiz-chapter-title').textContent = q.chapter;
+      document.getElementById('quiz-progress').textContent = `第 ${currentIndex + 1} / ${currentQuestions.length} 題`;
+      document.getElementById('question-text').textContent = q.question;
 
-## 1. 搬運原則
-* **身體工學**：屈膝平背、雙腳分開與肩同寬、重物緊貼身體。
-* **緊急搬運 (Emergency Move)**：僅限於現場存在**立即致命危險**（如火災、爆炸、毒氣外洩）時使用，快速將傷患拖離現場。`
-  }
-};
+      document.getElementById('explanation-box').classList.add('hidden');
+      document.getElementById('next-btn').classList.add('hidden');
+
+      const container = document.getElementById('options-container');
+      container.innerHTML = '';
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-4 rounded-xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition font-medium text-slate-700";
+        btn.textContent = `${['A', 'B', 'C', 'D'][idx]}. ${opt}`;
+        btn.onclick = () => selectOption(idx);
+        container.appendChild(btn);
+      });
+    }
+
+    function selectOption(index) {
+      if (selectedOption !== null) return;
+      selectedOption = index;
+
+      const q = currentQuestions[currentIndex];
+      const isCorrect = index === q.answer;
+      const optionButtons = document.getElementById('options-container').children;
+
+      for (let i = 0; i < optionButtons.length; i++) {
+        optionButtons[i].disabled = true;
+        if (i === q.answer) {
+          optionButtons[i].className = "w-full text-left p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 font-bold";
+        } else if (i === index && !isCorrect) {
+          optionButtons[i].className = "w-full text-left p-4 rounded-xl border-2 border-rose-500 bg-rose-50 text-rose-900 font-bold";
+        } else {
+          optionButtons[i].className = "w-full text-left p-4 rounded-xl border border-slate-200 text-slate-400 opacity-50";
+        }
+      }
+
+      if (isCorrect) {
+        if (currentMainTab === 'wrong') removeFromWrongList(q.id);
+      } else {
+        saveToWrongList(q.id);
+      }
+
+      const expBox = document.getElementById('explanation-box');
+      const resStatus = document.getElementById('result-status');
+      const expText = document.getElementById('explanation-text');
+
+      expBox.classList.remove('hidden');
+      if (isCorrect) {
+        expBox.className = "p-4 rounded-xl mb-6 text-sm bg-emerald-50 border border-emerald-200 text-emerald-900";
+        resStatus.textContent = "✨ 答對了！";
+      } else {
+        expBox.className = "p-4 rounded-xl mb-6 text-sm bg-rose-50 border border-rose-200 text-rose-900";
+        resStatus.textContent = "❌ 答錯了！已紀錄至錯題本";
+      }
+      expText.textContent = `解析：${q.explanation}`;
+
+      document.getElementById('next-btn').classList.remove('hidden');
+    }
+
+    function nextQuestion() {
+      if (currentMainTab === 'wrong') {
+        const wrongIds = getWrongList();
+        const allQ = window.allQuestions || [];
+        currentQuestions = allQ.filter(q => wrongIds.includes(q.id));
+        if (currentIndex >= currentQuestions.length) currentIndex = 0;
+      } else {
+        currentIndex++;
+      }
+
+      if (currentQuestions.length === 0) {
+        document.getElementById('view-quiz-wrapper').classList.add('hidden');
+        document.getElementById('view-empty-wrapper').classList.remove('hidden');
+      } else if (currentIndex < currentQuestions.length) {
+        loadQuestion();
+      } else {
+        alert("🎉 已經完成所有題目！");
+        switchMainTab(currentMainTab);
+      }
+    }
+
+    initSidebar();
+    updateWrongCount();
+  </script>
+</body>
+</html>
