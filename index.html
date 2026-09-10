@@ -3,57 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>學習筆記、測驗與錯題本系統</title>
-  <!-- 載入 Tailwind CSS (排版) 與 Marked.js ( Markdown 轉 HTML ) -->
+  <title>Markdown 筆記與測驗系統</title>
+  <!-- Tailwind CSS & Marked.js -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    /* 讓 Markdown 解析出來的文章樣式更美觀 */
+    /* Markdown 樣式微調 */
     .markdown-body h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a; }
     .markdown-body h2 { font-size: 1.35rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.25rem; }
     .markdown-body p { margin-bottom: 1rem; line-height: 1.7; color: #334155; }
     .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #334155; }
     .markdown-body li { margin-bottom: 0.5rem; }
-    .markdown-body code { background-color: #f1f5f9; padding: 0.2rem 0.4rem; rounded: 0.25rem; font-family: monospace; color: #0284c7; }
+    .markdown-body code { background-color: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; color: #0284c7; }
   </style>
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800 p-4 md:p-8">
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col">
 
-  <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
-    
-    <!-- 頂部頁籤導覽列 -->
-    <div class="flex bg-slate-50 border-b border-slate-200">
-      <button id="tab-note" onclick="switchTab('note')" class="flex-1 py-4 text-center font-bold border-b-2 border-indigo-600 text-indigo-600 transition">
+  <!-- 1. 頂部主功能導覽列 (分開：重點、測驗、錯題本) -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto flex">
+      <button id="tab-note" onclick="switchMainTab('note')" class="flex-1 py-4 text-center font-bold border-b-2 border-indigo-600 text-indigo-600 transition">
         📖 章節重點整理
       </button>
-      <button id="tab-quiz" onclick="switchTab('quiz')" class="flex-1 py-4 text-center font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
+      <button id="tab-quiz" onclick="switchMainTab('quiz')" class="flex-1 py-4 text-center font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
         📝 章節測驗
       </button>
-      <button id="tab-wrong" onclick="switchTab('wrong')" class="flex-1 py-4 text-center font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
+      <button id="tab-wrong" onclick="switchMainTab('wrong')" class="flex-1 py-4 text-center font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
         📚 錯題本 (<span id="wrong-count">0</span>)
       </button>
     </div>
+  </header>
 
-    <!-- 內容展示區 -->
-    <div class="p-6 md:p-8">
+  <!-- 主內容區 -->
+  <main class="max-w-6xl w-full mx-auto p-4 md:p-6 flex-1 flex gap-6">
 
-      <!-- ================= 模式 1：重點整理 (Markdown 渲染) ================= -->
-      <div id="view-note">
-        <div class="flex justify-between items-center mb-6">
-          <label class="font-bold text-slate-700">選擇章節：</label>
-          <select id="chapter-select" onchange="renderMarkdownNote()" class="border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="ch1">第一章：JavaScript 基礎</option>
-            <option value="ch2">第二章：非同步處理</option>
-          </select>
-        </div>
-        <!-- Markdown 文章渲染處 -->
+    <!-- 區塊 A：原本的章節閱讀模式 (連動側邊欄) -->
+    <div id="view-note-wrapper" class="w-full flex gap-6">
+      <!-- 側邊欄：章節清單 -->
+      <aside class="w-64 bg-white p-4 rounded-xl border border-slate-200 shadow-sm shrink-0 h-fit">
+        <h2 class="font-bold text-slate-700 mb-3 text-sm tracking-wider uppercase">章節目錄</h2>
+        <ul id="chapter-list" class="space-y-1">
+          <!-- 會由 JS 自動生成章節按鈕 -->
+        </ul>
+      </aside>
+
+      <!-- 文章內容展示區 -->
+      <section class="flex-1 bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
         <div id="markdown-content" class="markdown-body"></div>
-      </div>
+      </section>
+    </div>
 
-      <!-- ================= 模式 2 & 3：測驗區 / 錯題本 ================= -->
-      <div id="view-quiz" class="hidden">
+    <!-- 區塊 B：測驗與錯題本模式 -->
+    <div id="view-quiz-wrapper" class="w-full max-w-3xl mx-auto hidden">
+      <div class="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
         
-        <!-- 題目進度標頭 -->
+        <!-- 題目進度 -->
         <div class="flex justify-between items-center mb-4 text-sm font-medium text-slate-500">
           <span id="quiz-chapter-title">章節測驗</span>
           <span id="quiz-progress">第 1 / 1 題</span>
@@ -64,101 +68,100 @@
           載入中...
         </h2>
 
-        <!-- 選項按鈕區 -->
+        <!-- 選項列表 -->
         <div id="options-container" class="space-y-3 mb-6"></div>
 
-        <!-- 即時解析區 (答題後顯示) -->
+        <!-- 即時解析區 -->
         <div id="explanation-box" class="hidden p-4 rounded-xl mb-6 text-sm">
           <p id="result-status" class="font-bold text-base mb-1"></p>
           <p id="explanation-text" class="leading-relaxed"></p>
         </div>
 
-        <!-- 按鈕區 -->
+        <!-- 按鈕 -->
         <div class="flex justify-end">
-          <button id="next-btn" onclick="nextQuestion()" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl transition shadow-md">
+          <button id="next-btn" onclick="nextQuestion()" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl transition">
             下一題 ➔
           </button>
         </div>
       </div>
-
-      <!-- 空白提示 (當錯題本沒有錯題時顯示) -->
-      <div id="view-empty" class="hidden text-center py-12">
-        <div class="text-6xl mb-4">🎉</div>
-        <h3 class="text-xl font-bold text-slate-800 mb-2">太棒了！目前沒有任何錯題</h3>
-        <p class="text-slate-500 text-sm">只要在測驗中答錯，題目就會自動收集到這裡。</p>
-      </div>
-
     </div>
-  </div>
+
+    <!-- 區塊 C：錯題本無錯題時顯示的提示 -->
+    <div id="view-empty-wrapper" class="w-full max-w-xl mx-auto hidden text-center py-16 bg-white rounded-xl border border-slate-200 shadow-sm">
+      <div class="text-6xl mb-4">🎉</div>
+      <h3 class="text-xl font-bold text-slate-800 mb-2">太棒了！目前沒有任何錯題</h3>
+      <p class="text-slate-500 text-sm">在測驗中答錯的題目，會自動收集到這裡供您複習。</p>
+    </div>
+
+  </main>
+
+  <!-- 引入獨立題目檔 (與 index.html 放在同一個資料夾) -->
+  <script src="questions.js"></script>
 
   <script>
     // ==========================================
-    // 1. 資料庫 (可直接修改/擴充重點與題目)
+    // 1. 原本的 Markdown 筆記資料 (可繼續擴充)
     // ==========================================
-
-    // 重點整理資料 (Markdown 格式)
     const notesData = {
-      "ch1": `# 第一章：JavaScript 基礎
-## 1. 變數宣告
-* \`let\` 與 \`const\` 具備 **區塊作用域 (Block Scope)**。
-* \`var\` 具備函式作用域，且會發生 **變數提升 (Hoisting)**。
-
-## 2. 特殊型態
-* \`typeof null\` 會回傳 \`"object"\`，這是 JavaScript 歷史留下的 bug。`,
-
-      "ch2": `# 第二章：非同步處理
-## 1. Promise 機制
-* **fulfilled**：代表異步操作成功，會呼叫 \`resolve()\`。
-* **rejected**：代表異步操作失敗，會呼叫 \`reject()\`。`
+      "ch1": {
+        title: "第一章：JavaScript 基礎",
+        content: `# 第一章：JavaScript 基礎\n\n## 1. 變數宣告\n* \`let\` 與 \`const\` 具備 **區塊作用域 (Block Scope)**。\n* \`var\` 具備函式作用域，且會發生 **變數提升 (Hoisting)**。\n\n## 2. 特殊型態\n* \`typeof null\` 會回傳 \`"object"\`，這是歷史留下的 bug。`
+      },
+      "ch2": {
+        title: "第二章：非同步處理",
+        content: `# 第二章：非同步處理\n\n## 1. Promise 機制\n* **fulfilled**：代表異步操作成功，會呼叫 \`resolve()\`。\n* **rejected**：代表異步操作失敗，會呼叫 \`reject()\`。`
+      }
     };
 
-    // 測驗題庫資料
-    const allQuestions = [
-      {
-        id: "ch1_q1",
-        chapter: "第一章：JavaScript 基礎",
-        question: "下列關於 JavaScript 變數宣告的敘述，何者正確？",
-        options: [
-          "const 宣告後可以任意重新指定值",
-          "let 具有區塊作用域 (Block Scope)",
-          "var 不會發生變數提升 (Hoisting)",
-          "以上皆非"
-        ],
-        answer: 1, // 代表第二個選項 (索引值 0, 1, 2, 3)
-        explanation: "let 與 const 都具有區塊作用域，而 var 宣告的變數會發生 Hoisting（提升）。"
-      },
-      {
-        id: "ch1_q2",
-        chapter: "第一章：JavaScript 基礎",
-        question: "在 JavaScript 中，`typeof null` 回傳的結果為何？",
-        options: ["\"null\"", "\"undefined\"", "\"object\"", "\"number\""],
-        answer: 2,
-        explanation: "這是 JavaScript 語言歷史留下的設計 Bug，typeof null 會回傳 \"object\"。"
-      },
-      {
-        id: "ch2_q1",
-        chapter: "第二章：非同步處理",
-        question: "Promise 物件執行成功時，會呼叫下列哪一個函式？",
-        options: ["reject()", "resolve()", "catch()", "then()"],
-        answer: 1,
-        explanation: "Promise 成功時會呼叫 resolve() 並轉為 fulfilled 狀態；失敗時則呼叫 reject()。"
-      }
-    ];
-
-    // ==========================================
-    // 2. 狀態管理與 LocalStorage 操作
-    // ==========================================
-    let currentTab = 'note'; // 'note' | 'quiz' | 'wrong'
+    let currentChapterKey = 'ch1';
+    let currentMainTab = 'note'; // 'note' | 'quiz' | 'wrong'
     let currentQuestions = [];
     let currentIndex = 0;
     let selectedOption = null;
 
-    // 從 LocalStorage 撈取錯題 ID 陣列
+    // ==========================================
+    // 2. 初始化側邊欄選單
+    // ==========================================
+    function initSidebar() {
+      const listEl = document.getElementById('chapter-list');
+      listEl.innerHTML = '';
+      
+      Object.keys(notesData).forEach(key => {
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.id = `side-btn-${key}`;
+        btn.className = "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-100";
+        btn.textContent = notesData[key].title;
+        btn.onclick = () => selectChapter(key);
+        li.appendChild(btn);
+        listEl.appendChild(li);
+      });
+
+      selectChapter(currentChapterKey);
+    }
+
+    function selectChapter(key) {
+      currentChapterKey = key;
+      // 更新側邊欄高亮
+      Object.keys(notesData).forEach(k => {
+        const btn = document.getElementById(`side-btn-${k}`);
+        if (btn) {
+          btn.className = k === key 
+            ? "w-full text-left px-3 py-2 rounded-lg text-sm font-bold bg-indigo-50 text-indigo-600"
+            : "w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100";
+        }
+      });
+      // 渲染 Markdown
+      document.getElementById('markdown-content').innerHTML = marked.parse(notesData[key].content);
+    }
+
+    // ==========================================
+    // 3. LocalStorage 錯題本操作
+    // ==========================================
     function getWrongList() {
       return JSON.parse(localStorage.getItem('wrong_questions') || '[]');
     }
 
-    // 加入錯題本
     function saveToWrongList(qId) {
       let list = getWrongList();
       if (!list.includes(qId)) {
@@ -168,56 +171,50 @@
       updateWrongCount();
     }
 
-    // 從錯題本移除 (答對時)
     function removeFromWrongList(qId) {
       let list = getWrongList().filter(id => id !== qId);
       localStorage.setItem('wrong_questions', JSON.stringify(list));
       updateWrongCount();
     }
 
-    // 更新數字氣泡
     function updateWrongCount() {
       document.getElementById('wrong-count').textContent = getWrongList().length;
     }
 
     // ==========================================
-    // 3. 頁籤切換邏輯
+    // 4. 頂部主選單切換 (筆記 / 測驗 / 錯題本)
     // ==========================================
-    function switchTab(tab) {
-      currentTab = tab;
+    function switchMainTab(tab) {
+      currentMainTab = tab;
 
-      // 更新頁籤 UI 樣式
-      const tabs = ['note', 'quiz', 'wrong'];
-      tabs.forEach(t => {
+      // 更新頁籤樣式
+      ['note', 'quiz', 'wrong'].forEach(t => {
         const btn = document.getElementById(`tab-${t}`);
-        if (t === tab) {
-          btn.className = "flex-1 py-4 text-center font-bold border-b-2 border-indigo-600 text-indigo-600 transition";
-        } else {
-          btn.className = "flex-1 py-4 text-center font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition";
-        }
+        btn.className = t === tab 
+          ? "flex-1 py-4 text-center font-bold border-b-2 border-indigo-600 text-indigo-600 transition"
+          : "flex-1 py-4 text-center font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition";
       });
 
-      // 隱藏所有區域
-      document.getElementById('view-note').classList.add('hidden');
-      document.getElementById('view-quiz').classList.add('hidden');
-      document.getElementById('view-empty').classList.add('hidden');
+      // 隱藏所有內容區塊
+      document.getElementById('view-note-wrapper').classList.add('hidden');
+      document.getElementById('view-quiz-wrapper').classList.add('hidden');
+      document.getElementById('view-empty-wrapper').classList.add('hidden');
 
-      // 依模式渲染畫面
       if (tab === 'note') {
-        document.getElementById('view-note').classList.remove('hidden');
-        renderMarkdownNote();
+        document.getElementById('view-note-wrapper').classList.remove('hidden');
       } else {
+        const allQ = window.allQuestions || [];
         if (tab === 'quiz') {
-          currentQuestions = [...allQuestions];
+          currentQuestions = [...allQ];
         } else if (tab === 'wrong') {
           const wrongIds = getWrongList();
-          currentQuestions = allQuestions.filter(q => wrongIds.includes(q.id));
+          currentQuestions = allQ.filter(q => wrongIds.includes(q.id));
         }
 
         if (currentQuestions.length === 0) {
-          document.getElementById('view-empty').classList.remove('hidden');
+          document.getElementById('view-empty-wrapper').classList.remove('hidden');
         } else {
-          document.getElementById('view-quiz').classList.remove('hidden');
+          document.getElementById('view-quiz-wrapper').classList.remove('hidden');
           currentIndex = 0;
           loadQuestion();
         }
@@ -225,37 +222,25 @@
     }
 
     // ==========================================
-    // 4. 重點整理渲染 (Marked.js)
-    // ==========================================
-    function renderMarkdownNote() {
-      const chKey = document.getElementById('chapter-select').value;
-      const mdText = notesData[chKey] || "# 尚無資料";
-      document.getElementById('markdown-content').innerHTML = marked.parse(mdText);
-    }
-
-    // ==========================================
-    // 5. 測驗與錯題本核心邏輯
+    // 5. 測驗載入與答題邏輯
     // ==========================================
     function loadQuestion() {
       const q = currentQuestions[currentIndex];
       selectedOption = null;
 
-      // 填入文字
       document.getElementById('quiz-chapter-title').textContent = q.chapter;
       document.getElementById('quiz-progress').textContent = `第 ${currentIndex + 1} / ${currentQuestions.length} 題`;
       document.getElementById('question-text').textContent = q.question;
 
-      // 重置隱藏元件
       document.getElementById('explanation-box').classList.add('hidden');
       document.getElementById('next-btn').classList.add('hidden');
 
-      // 動態生成選項
       const container = document.getElementById('options-container');
       container.innerHTML = '';
 
       q.options.forEach((opt, idx) => {
         const btn = document.createElement('button');
-        btn.className = "w-full text-left p-4 rounded-xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition font-medium text-slate-700 focus:outline-none";
+        btn.className = "w-full text-left p-4 rounded-xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition font-medium text-slate-700";
         btn.textContent = `${['A', 'B', 'C', 'D'][idx]}. ${opt}`;
         btn.onclick = () => selectOption(idx);
         container.appendChild(btn);
@@ -263,14 +248,13 @@
     }
 
     function selectOption(index) {
-      if (selectedOption !== null) return; // 鎖定不可重複點擊
+      if (selectedOption !== null) return;
       selectedOption = index;
 
       const q = currentQuestions[currentIndex];
       const isCorrect = index === q.answer;
       const optionButtons = document.getElementById('options-container').children;
 
-      // 比對答案並標示紅綠色彩
       for (let i = 0; i < optionButtons.length; i++) {
         optionButtons[i].disabled = true;
         if (i === q.answer) {
@@ -282,14 +266,12 @@
         }
       }
 
-      // 錯題本紀錄邏輯
       if (isCorrect) {
-        if (currentTab === 'wrong') removeFromWrongList(q.id);
+        if (currentMainTab === 'wrong') removeFromWrongList(q.id);
       } else {
         saveToWrongList(q.id);
       }
 
-      // 顯示即時解析
       const expBox = document.getElementById('explanation-box');
       const resStatus = document.getElementById('result-status');
       const expText = document.getElementById('explanation-text');
@@ -304,34 +286,33 @@
       }
       expText.textContent = `解析：${q.explanation}`;
 
-      // 顯示下一題按鈕
       document.getElementById('next-btn').classList.remove('hidden');
     }
 
     function nextQuestion() {
-      // 若在錯題本模式且剛剛答對，更新題目庫陣列
-      if (currentTab === 'wrong') {
+      if (currentMainTab === 'wrong') {
         const wrongIds = getWrongList();
-        currentQuestions = allQuestions.filter(q => wrongIds.includes(q.id));
+        const allQ = window.allQuestions || [];
+        currentQuestions = allQ.filter(q => wrongIds.includes(q.id));
         if (currentIndex >= currentQuestions.length) currentIndex = 0;
       } else {
         currentIndex++;
       }
 
       if (currentQuestions.length === 0) {
-        document.getElementById('view-quiz').classList.add('hidden');
-        document.getElementById('view-empty').classList.remove('hidden');
+        document.getElementById('view-quiz-wrapper').classList.add('hidden');
+        document.getElementById('view-empty-wrapper').classList.remove('hidden');
       } else if (currentIndex < currentQuestions.length) {
         loadQuestion();
       } else {
         alert("🎉 已經完成此模式的所有題目！");
-        switchTab(currentTab); // 重新載入當前頁籤
+        switchMainTab(currentMainTab);
       }
     }
 
-    // 初始化頁面
+    // 頁面初始化
+    initSidebar();
     updateWrongCount();
-    switchTab('note');
   </script>
 </body>
 </html>
