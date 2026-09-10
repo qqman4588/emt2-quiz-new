@@ -4,102 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EMT-2 題庫測驗系統</title>
-    <!-- 引入題庫與渲染工具 (全部指向你 GitHub 裡的實體檔案) -->
     <script src="marked.min.js"></script>
     <script src="data.js"></script>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #121212;
             color: #ffffff;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            justify-content: center;
         }
         .container {
-            max-width: 600px;
+            max-width: 650px;
             width: 100%;
             background: #1e1e1e;
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        h1 { font-size: 20px; text-align: center; color: #32e6e2; }
-        .question { font-size: 16px; margin-bottom: 15px; }
-        .options button {
-            display: block;
+        h1 { font-size: 20px; text-align: center; color: #32e6e2; margin-top: 0; }
+        select {
             width: 100%;
-            padding: 12px;
-            margin: 8px 0;
+            padding: 10px;
+            margin-bottom: 15px;
             background: #2a2a2a;
             color: #fff;
-            border: 1px solid #444;
+            border: 1px solid #05bdba;
             border-radius: 8px;
-            text-align: left;
             font-size: 15px;
         }
-        .options button:active { background: #05bdba; }
-        .next-btn {
-            width: 100%;
-            padding: 12px;
-            margin-top: 15px;
-            background: #05bdba;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #000;
+        .markdown-body {
+            line-height: 1.6;
+            font-size: 15px;
+            word-break: break-word;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>EMT-2 題庫自主測驗</h1>
-        <div id="quiz-box">
-            <div id="question" class="question">載入題庫中...</div>
-            <div id="options" class="options"></div>
-            <button id="next-btn" class="next-btn" onclick="nextQuestion()" style="display:none;">下一題</button>
-        </div>
+        <h1>EMT-2 題庫自主測驗系統</h1>
+        <select id="chapter-select" onchange="switchChapter()">
+            <option value="">載入章節中...</option>
+        </select>
+        <div id="content" class="markdown-body">正在載入題庫內容...</div>
     </div>
 
     <script>
-        let currentIndex = 0;
+        function initApp() {
+            if (!window.EMT2_DATA || !window.EMT2_DATA.chapters) {
+                document.getElementById('content').innerText = "錯誤：無法讀取 EMT2_DATA，請確認 data.js 是否存在且載入正確。";
+                return;
+            }
 
-        function loadQuestion() {
-            if (typeof quizData === 'undefined' && typeof questions === 'undefined' && typeof data === 'undefined') {
-                document.getElementById('question').innerText = "已讀取主頁面！正在串接 848KB 題庫中...";
-                return;
-            }
-            // 自動適應題庫變數
-            let list = window.quizData || window.questions || window.data;
-            if (!list || list.length === 0) {
-                document.getElementById('question').innerText = "未找到題目資料，請確認 data.js 內容。";
-                return;
-            }
-            let q = list[currentIndex];
-            document.getElementById('question').innerText = (currentIndex + 1) + ". " + (q.question || q.q);
-            let optsHtml = "";
-            let options = q.options || q.opts || [];
-            options.forEach((opt, idx) => {
-                optsHtml += `<button onclick="checkAnswer(${idx})">${opt}</button>`;
+            let chapters = window.EMT2_DATA.chapters;
+            let select = document.getElementById('chapter-select');
+            select.innerHTML = "";
+
+            chapters.forEach((ch, index) => {
+                let opt = document.createElement('option');
+                opt.value = index;
+                opt.innerText = ch.title || (`第 ${ch.chapter_num} 章 (${ch.question_count}題)`);
+                select.appendChild(opt);
             });
-            document.getElementById('options').innerHTML = optsHtml;
-            document.getElementById('next-btn').style.display = 'none';
+
+            switchChapter();
         }
 
-        function checkAnswer(idx) {
-            alert("已選擇選項 " + (idx + 1));
-            document.getElementById('next-btn').style.display = 'block';
+        function switchChapter() {
+            let index = document.getElementById('chapter-select').value;
+            if (index === "") return;
+            
+            let ch = window.EMT2_DATA.chapters[index];
+            let rawMd = ch.notes_markdown || "本章節無內容";
+
+            if (typeof marked !== 'undefined') {
+                document.getElementById('content').innerHTML = marked.parse(rawMd);
+            } else {
+                document.getElementById('content').innerText = rawMd;
+            }
         }
 
-        function nextQuestion() {
-            currentIndex++;
-            loadQuestion();
-        }
-
-        window.onload = loadQuestion;
+        window.onload = initApp;
     </script>
 </body>
 </html>
