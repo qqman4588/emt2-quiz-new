@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Markdown 筆記與測驗系統</title>
+  <title>EMT 緊急救護員 學習與題庫系統</title>
   <!-- Tailwind CSS & Marked.js -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    /* Markdown 樣式微調 */
     .markdown-body h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a; }
     .markdown-body h2 { font-size: 1.35rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.25rem; }
     .markdown-body p { margin-bottom: 1rem; line-height: 1.7; color: #334155; }
@@ -19,7 +18,7 @@
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col">
 
-  <!-- 1. 頂部主功能導覽列 (分開：重點、測驗、錯題本) -->
+  <!-- 頂部主功能導覽列 -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
     <div class="max-w-6xl mx-auto flex">
       <button id="tab-note" onclick="switchMainTab('note')" class="flex-1 py-4 text-center font-bold border-b-2 border-indigo-600 text-indigo-600 transition">
@@ -37,18 +36,16 @@
   <!-- 主內容區 -->
   <main class="max-w-6xl w-full mx-auto p-4 md:p-6 flex-1 flex gap-6">
 
-    <!-- 區塊 A：原本的章節閱讀模式 (連動側邊欄) -->
-    <div id="view-note-wrapper" class="w-full flex gap-6">
-      <!-- 側邊欄：章節清單 -->
-      <aside class="w-64 bg-white p-4 rounded-xl border border-slate-200 shadow-sm shrink-0 h-fit">
-        <h2 class="font-bold text-slate-700 mb-3 text-sm tracking-wider uppercase">章節目錄</h2>
-        <ul id="chapter-list" class="space-y-1">
-          <!-- 會由 JS 自動生成章節按鈕 -->
-        </ul>
+    <!-- 區塊 A：18 章重點閱讀模式 -->
+    <div id="view-note-wrapper" class="w-full flex flex-col md:flex-row gap-6">
+      <!-- 側邊欄：18 章選單 -->
+      <aside class="w-full md:w-72 bg-white p-4 rounded-xl border border-slate-200 shadow-sm shrink-0 h-fit max-h-[80vh] overflow-y-auto">
+        <h2 class="font-bold text-slate-700 mb-3 text-sm tracking-wider uppercase border-b pb-2">EMT 講義章節目錄 (全18章)</h2>
+        <ul id="chapter-list" class="space-y-1"></ul>
       </aside>
 
       <!-- 文章內容展示區 -->
-      <section class="flex-1 bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
+      <section class="flex-1 bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm min-h-[500px]">
         <div id="markdown-content" class="markdown-body"></div>
       </section>
     </div>
@@ -56,28 +53,22 @@
     <!-- 區塊 B：測驗與錯題本模式 -->
     <div id="view-quiz-wrapper" class="w-full max-w-3xl mx-auto hidden">
       <div class="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
-        
-        <!-- 題目進度 -->
         <div class="flex justify-between items-center mb-4 text-sm font-medium text-slate-500">
           <span id="quiz-chapter-title">章節測驗</span>
           <span id="quiz-progress">第 1 / 1 題</span>
         </div>
 
-        <!-- 題目內文 -->
         <h2 id="question-text" class="text-lg md:text-xl font-bold mb-6 text-slate-900 leading-relaxed">
           載入中...
         </h2>
 
-        <!-- 選項列表 -->
         <div id="options-container" class="space-y-3 mb-6"></div>
 
-        <!-- 即時解析區 -->
         <div id="explanation-box" class="hidden p-4 rounded-xl mb-6 text-sm">
           <p id="result-status" class="font-bold text-base mb-1"></p>
           <p id="explanation-text" class="leading-relaxed"></p>
         </div>
 
-        <!-- 按鈕 -->
         <div class="flex justify-end">
           <button id="next-btn" onclick="nextQuestion()" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl transition">
             下一題 ➔
@@ -86,7 +77,7 @@
       </div>
     </div>
 
-    <!-- 區塊 C：錯題本無錯題時顯示的提示 -->
+    <!-- 區塊 C：無錯題提示 -->
     <div id="view-empty-wrapper" class="w-full max-w-xl mx-auto hidden text-center py-16 bg-white rounded-xl border border-slate-200 shadow-sm">
       <div class="text-6xl mb-4">🎉</div>
       <h3 class="text-xl font-bold text-slate-800 mb-2">太棒了！目前沒有任何錯題</h3>
@@ -95,33 +86,38 @@
 
   </main>
 
-  <!-- 引入獨立題目檔 (與 index.html 放在同一個資料夾) -->
+  <!-- 引入題目檔 (與 index.html 同目錄) -->
   <script src="questions.js"></script>
 
   <script>
-    // ==========================================
-    // 1. 原本的 Markdown 筆記資料 (可繼續擴充)
-    // ==========================================
+    // 完整的 18 章 EMT 講義資料結構
     const notesData = {
-      "ch1": {
-        title: "第一章：JavaScript 基礎",
-        content: `# 第一章：JavaScript 基礎\n\n## 1. 變數宣告\n* \`let\` 與 \`const\` 具備 **區塊作用域 (Block Scope)**。\n* \`var\` 具備函式作用域，且會發生 **變數提升 (Hoisting)**。\n\n## 2. 特殊型態\n* \`typeof null\` 會回傳 \`"object"\`，這是歷史留下的 bug。`
-      },
-      "ch2": {
-        title: "第二章：非同步處理",
-        content: `# 第二章：非同步處理\n\n## 1. Promise 機制\n* **fulfilled**：代表異步操作成功，會呼叫 \`resolve()\`。\n* **rejected**：代表異步操作失敗，會呼叫 \`reject()\`。`
-      }
+      "ch1": { title: "第一章：緊急醫療救護體系概論", content: "# 第一章：緊急醫療救護體系概論\n\n* **EMT 職責**：現場評估、急救處置、安全送醫。\n* **法律責任**：緊急醫療救護法、知情同意與拒絕送醫流程。" },
+      "ch2": { title: "第二章：人體構造與生理基礎", content: "# 第二章：人體構造與生理基礎\n\n* **解剖體位**：正面朝前、雙手下垂掌心朝前。\n* **主要系統**：循環系統、呼吸系統、神經系統、骨骼肌肉系統。" },
+      "ch3": { title: "第三章：現場安全與感染控制", content: "# 第三章：現場安全與感染控制\n\n* **個人防護裝備 (PPE)**：手套、口罩、護目鏡。\n* **現場安全**：觀察車流、火災、有害物質，現場安全為第一優先。" },
+      "ch4": { title: "第四章：病人評估（初評與次評）", content: "# 第四章：病人評估\n\n* **XABCDE 流程**：致死性大出血 ➔ 氣道 ➔ 呼吸 ➔ 循環 ➔ 神經 ➔ 暴露保暖。\n* **SAMPLE 詢問病史**：症狀、過敏、藥物、病史、最後進食、事件經過。" },
+      "ch5": { title: "第五章：氣道管理與呼吸急症", content: "# 第五章：氣道管理與呼吸急症\n\n* **開啟氣道**：無創傷用壓額抬下巴法；懷疑頸椎創傷用推下頷法 (Jaw-thrust)。\n* **給氧器材**：鼻導管 (2-6 L/min)、未濃縮氧氣面罩 (NRM 12-15 L/min)。" },
+      "ch6": { title: "第六章：心律不整與 CPR / AED 操作", content: "# 第六章：心律不整與 CPR / AED 操作\n\n* **高品質 CPR**：按壓深度 5-6 cm、速率 100-120 次/分、按壓後完全回彈。\n* **AED 可電擊心律**：VF (心室顫動) 與 Pulseless VT (無脈搏心室頻脈)。" },
+      "ch7": { title: "第七章：休克與循環系統急症", content: "# 第七章：休克與循環系統急症\n\n* **休克分類**：低血容性、心因性、分布性（過敏性、敗血性、神經性）、阻塞性。\n* **胸痛藥物**：協助使用 NTG（血壓需 > 90 mmHg 且無使用壯陽藥）。" },
+      "ch8": { title: "第八章：神經系統急症（中風與癲癇）", content: "# 第八章：神經系統急症\n\n* **Cincinnati 辛辛那提中風指標**：手臂下垂、臉部歪斜、言語異常。\n* **癲癇處置**：保護頭部、維持氣道通暢、勿強行塞入硬物。" },
+      "ch9": { title: "第九章：糖尿病與代謝急症", content: "# 第九章：糖尿病與代謝急症\n\n* **低血糖**：血糖 < 60 mg/dL，意識清醒者可口服葡萄糖膠/糖水。" },
+      "ch10": { title: "第十章：過敏反應與中毒急症", content: "# 第十章：過敏反應與中毒急症\n\n* **嚴重過敏**：過敏性休克、喉頭水腫，肌肉注射 Epinephrine (成人 0.3mg)。" },
+      "ch11": { title: "第十一章：急腹症與環境急症", content: "# 第十一章：急腹症與環境急症\n\n* **熱急症**：熱痙攣、熱衰竭、熱中暑（體溫 > 40°C 且無汗/意識改變）。" },
+      "ch12": { title: "第十二章：創傷總論與軟組織創傷", content: "# 第十二章：創傷總論與軟組織創傷\n\n* **止血方法**：直接加壓止血法、止血帶（記錄時間於額頭/止血帶上）。" },
+      "ch13": { title: "第十三章：骨骼肌肉創傷與固定", content: "# 第十三章：骨骼肌肉創傷與固定\n\n* **固定原則**：固定傷處上下兩個關節，包紮前後均需確認 CMS (循環/感覺/運動)。" },
+      "ch14": { title: "第十四章：頭脊椎與胸腹部創傷", content: "# 第十四章：頭脊椎與胸腹部創傷\n\n* **Cushing's Triad**：收縮壓升高、心跳過緩、呼吸不規則 ➔ ICP 升高。\n* **Beck's Triad**：低血壓、頸靜脈怒張、心音遙遠 ➔ 心包填塞。" },
+      "ch15": { title: "第十五章：婦產科急症與急產接生", content: "# 第十五章：婦產科急症與急產接生\n\n* **急產接生**：托住胎頭避免撕裂、清乾淨口鼻、保暖、記錄出生時間。" },
+      "ch16": { title: "第十六章：小兒與老年救護特論", content: "# 第十六章：小兒與老年救護特論\n\n* **小兒評估三角 (PAT)**：外觀 (Appearance)、呼吸工作 (Work of breathing)、皮膚循環 (Circulation)。" },
+      "ch17": { title: "第十七章：大量傷病患與檢傷分類", content: "# 第十七章：大量傷病患與檢傷分類\n\n* **START 檢傷分類法**：呼吸 (RPM)、血液循環/微血管充盈、意識狀態。" },
+      "ch18": { title: "第十八章：特殊救護情境與搬運救護", content: "# 第十八章：特殊救護情境與搬運救護\n\n* **搬運原則**：人體工學、屈膝平背、緊貼身體、緊急搬運與搬運器材使用。" }
     };
 
     let currentChapterKey = 'ch1';
-    let currentMainTab = 'note'; // 'note' | 'quiz' | 'wrong'
+    let currentMainTab = 'note';
     let currentQuestions = [];
     let currentIndex = 0;
     let selectedOption = null;
 
-    // ==========================================
-    // 2. 初始化側邊欄選單
-    // ==========================================
     function initSidebar() {
       const listEl = document.getElementById('chapter-list');
       listEl.innerHTML = '';
@@ -142,7 +138,6 @@
 
     function selectChapter(key) {
       currentChapterKey = key;
-      // 更新側邊欄高亮
       Object.keys(notesData).forEach(k => {
         const btn = document.getElementById(`side-btn-${k}`);
         if (btn) {
@@ -151,13 +146,9 @@
             : "w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100";
         }
       });
-      // 渲染 Markdown
       document.getElementById('markdown-content').innerHTML = marked.parse(notesData[key].content);
     }
 
-    // ==========================================
-    // 3. LocalStorage 錯題本操作
-    // ==========================================
     function getWrongList() {
       return JSON.parse(localStorage.getItem('wrong_questions') || '[]');
     }
@@ -181,13 +172,9 @@
       document.getElementById('wrong-count').textContent = getWrongList().length;
     }
 
-    // ==========================================
-    // 4. 頂部主選單切換 (筆記 / 測驗 / 錯題本)
-    // ==========================================
     function switchMainTab(tab) {
       currentMainTab = tab;
 
-      // 更新頁籤樣式
       ['note', 'quiz', 'wrong'].forEach(t => {
         const btn = document.getElementById(`tab-${t}`);
         btn.className = t === tab 
@@ -195,7 +182,6 @@
           : "flex-1 py-4 text-center font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition";
       });
 
-      // 隱藏所有內容區塊
       document.getElementById('view-note-wrapper').classList.add('hidden');
       document.getElementById('view-quiz-wrapper').classList.add('hidden');
       document.getElementById('view-empty-wrapper').classList.add('hidden');
@@ -221,9 +207,6 @@
       }
     }
 
-    // ==========================================
-    // 5. 測驗載入與答題邏輯
-    // ==========================================
     function loadQuestion() {
       const q = currentQuestions[currentIndex];
       selectedOption = null;
@@ -305,12 +288,11 @@
       } else if (currentIndex < currentQuestions.length) {
         loadQuestion();
       } else {
-        alert("🎉 已經完成此模式的所有題目！");
+        alert("🎉 已經完成所有題目！");
         switchMainTab(currentMainTab);
       }
     }
 
-    // 頁面初始化
     initSidebar();
     updateWrongCount();
   </script>
