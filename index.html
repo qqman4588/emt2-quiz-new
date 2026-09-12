@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EMT-2 題庫測驗系統</title>
+    <title>EMT-2 題庫自主測驗系統</title>
     <script src="marked.min.js"></script>
     <script src="data.js"></script>
     <style>
@@ -17,14 +17,40 @@
             justify-content: center;
         }
         .container {
-            max-width: 650px;
+            max-width: 680px;
             width: 100%;
             background: #1e1e1e;
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        h1 { font-size: 20px; text-align: center; color: #32e6e2; margin-top: 0; }
+        h1 { font-size: 20px; text-align: center; color: #32e6e2; margin-top: 0; margin-bottom: 15px; }
+        
+        /* 模式切換按鈕區 */
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+        .mode-btn {
+            padding: 8px 4px;
+            background: #2a2a2a;
+            color: #aaa;
+            border: 1px solid #444;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .mode-btn.active {
+            background: #05bdba;
+            color: #fff;
+            border-color: #32e6e2;
+        }
+
         select {
             width: 100%;
             padding: 10px;
@@ -34,27 +60,136 @@
             border: 1px solid #05bdba;
             border-radius: 8px;
             font-size: 15px;
+            outline: none;
         }
+
+        /* 統計與控制欄 */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #282828;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #32e6e2;
+        }
+
+        /* Markdown 樣式 */
         .markdown-body {
             line-height: 1.6;
             font-size: 15px;
             word-break: break-word;
         }
+        .markdown-body h1, .markdown-body h2 { color: #32e6e2; border-bottom: 1px solid #333; padding-bottom: 4px; }
+        .markdown-body ul { padding-left: 20px; }
+
+        /* 題目卡片 */
+        .question-card {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+        }
+        .question-title {
+            font-weight: bold;
+            margin-bottom: 12px;
+            line-height: 1.5;
+            color: #fff;
+        }
+        .option-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 10px 12px;
+            margin: 8px 0;
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+        .option-btn:hover:not(:disabled) {
+            background: #444;
+            border-color: #32e6e2;
+        }
+        .option-btn.correct {
+            background: #1b4332 !important;
+            border-color: #2ec4b6 !important;
+            color: #70e000 !important;
+            font-weight: bold;
+        }
+        .option-btn.wrong {
+            background: #4a121a !important;
+            border-color: #e63946 !important;
+            color: #ff758f !important;
+        }
+        .explanation {
+            margin-top: 10px;
+            padding: 10px;
+            background: #1e1e1e;
+            border-left: 4px solid #32e6e2;
+            font-size: 13px;
+            color: #ccc;
+            line-height: 1.5;
+        }
+        .action-btn {
+            width: 100%;
+            padding: 10px;
+            background: #05bdba;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+            margin-top: 10px;
+        }
+        .action-btn:hover { background: #049b99; }
+        .clear-btn { background: #e63946; margin-top: 15px; }
+        .clear-btn:hover { background: #b82a36; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>EMT-2 題庫自主測驗系統</h1>
-        <select id="chapter-select" onchange="switchChapter()">
+        
+        <!-- 頂部切換頁籤 -->
+        <div class="mode-grid">
+            <button id="btn-note" class="mode-btn active" onclick="switchMode('note')">章節重點</button>
+            <button id="btn-chapter" class="mode-btn" onclick="switchMode('chapter')">章節練習</button>
+            <button id="btn-random" class="mode-btn" onclick="switchMode('random')">隨機快刷</button>
+            <button id="btn-exam" class="mode-btn" onclick="switchMode('exam')">模擬考試</button>
+            <button id="btn-wrong" class="mode-btn" onclick="switchMode('wrong')">錯題本</button>
+        </div>
+
+        <!-- 下拉選擇章節（僅在講義與章節練習顯示） -->
+        <select id="chapter-select" onchange="onChapterChange()">
             <option value="">載入章節中...</option>
         </select>
-        <div id="content" class="markdown-body">正在載入題庫內容...</div>
+
+        <!-- 狀態資訊欄 (顯示倒數計時 / 統計) -->
+        <div id="status-bar" class="status-bar" style="display: none;">
+            <span id="status-text">準備就緒</span>
+            <span id="timer-text"></span>
+        </div>
+
+        <!-- 主要內容區 -->
+        <div id="content-view"></div>
     </div>
 
     <script>
+        let currentMode = 'note';
+        let examTimer = null;
+        let examTimeLeft = 3000; // 50分鐘倒數
+
         function initApp() {
             if (!window.EMT2_DATA || !window.EMT2_DATA.chapters) {
-                document.getElementById('content').innerText = "錯誤：無法讀取 EMT2_DATA，請確認 data.js 是否存在且載入正確。";
+                document.getElementById('content-view').innerText = "錯誤：無法讀取 EMT2_DATA，請確認 data.js 是否存在且載入正確。";
                 return;
             }
 
@@ -65,25 +200,222 @@
             chapters.forEach((ch, index) => {
                 let opt = document.createElement('option');
                 opt.value = index;
-                opt.innerText = ch.title || (`第 ${ch.chapter_num} 章 (${ch.question_count}題)`);
+                opt.innerText = ch.title || (`第 ${ch.chapter_num || (index + 1)} 章 (${ch.question_count || 0}題)`);
                 select.appendChild(opt);
             });
 
-            switchChapter();
+            switchMode('note');
         }
 
-        function switchChapter() {
-            let index = document.getElementById('chapter-select').value;
-            if (index === "") return;
-            
-            let ch = window.EMT2_DATA.chapters[index];
-            let rawMd = ch.notes_markdown || "本章節無內容";
+        function switchMode(mode) {
+            currentMode = mode;
+            clearInterval(examTimer);
 
+            // 更新按鈕狀態
+            ['note', 'chapter', 'random', 'exam', 'wrong'].forEach(m => {
+                document.getElementById(`btn-${m}`).classList.toggle('active', m === mode);
+            });
+
+            // 調整選單與狀態列顯示
+            let select = document.getElementById('chapter-select');
+            let statusBar = document.getElementById('status-bar');
+            
+            select.style.display = (mode === 'note' || mode === 'chapter') ? 'block' : 'none';
+            statusBar.style.display = (mode !== 'note') ? 'flex' : 'none';
+
+            if (mode === 'note') renderNotes();
+            else if (mode === 'chapter') renderChapterQuiz();
+            else if (mode === 'random') renderRandomQuiz();
+            else if (mode === 'exam') startExam();
+            else if (mode === 'wrong') renderWrongQuiz();
+        }
+
+        function onChapterChange() {
+            if (currentMode === 'note') renderNotes();
+            else if (currentMode === 'chapter') renderChapterQuiz();
+        }
+
+        /* 1. 章節重點 */
+        function renderNotes() {
+            let idx = document.getElementById('chapter-select').value;
+            if (idx === "") return;
+            let ch = window.EMT2_DATA.chapters[idx];
+            let rawMd = ch.notes_markdown || "本章節無重點整理內容。";
+
+            let view = document.getElementById('content-view');
+            view.className = "markdown-body";
             if (typeof marked !== 'undefined') {
-                document.getElementById('content').innerHTML = marked.parse(rawMd);
+                view.innerHTML = marked.parse(rawMd);
             } else {
-                document.getElementById('content').innerText = rawMd;
+                view.innerText = rawMd;
             }
+        }
+
+        /* 取得全題庫拍平陣列 */
+        function getAllQuestions() {
+            let all = [];
+            window.EMT2_DATA.chapters.forEach((ch, cIdx) => {
+                if (ch.questions) {
+                    ch.questions.forEach((q, qIdx) => {
+                        all.push({ ...q, id: `c${cIdx}_q${qIdx}`, chapterTitle: ch.title });
+                    });
+                }
+            });
+            return all;
+        }
+
+        /* 2. 章節練習 */
+        function renderChapterQuiz() {
+            let idx = document.getElementById('chapter-select').value;
+            if (idx === "") return;
+            let ch = window.EMT2_DATA.chapters[idx];
+            let questions = (ch.questions || []).map((q, qIdx) => ({ ...q, id: `c${idx}_q${qIdx}` }));
+
+            document.getElementById('status-text').innerText = `${ch.title || '章節練習'} - 共 ${questions.length} 題`;
+            document.getElementById('timer-text').innerText = "";
+            renderQuestionList(questions, false);
+        }
+
+        /* 3. 隨機快刷 */
+        function renderRandomQuiz() {
+            let all = getAllQuestions();
+            // 洗牌算法 (Fisher-Yates)
+            for (let i = all.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [all[i], all[j]] = [all[j], all[i]];
+            }
+            document.getElementById('status-text').innerText = `全題庫隨機快刷 - 共 ${all.length} 題`;
+            document.getElementById('timer-text').innerText = "";
+            renderQuestionList(all.slice(0, 30), false); // 預設抽30題
+        }
+
+        /* 4. 模擬考試 */
+        function startExam() {
+            let all = getAllQuestions();
+            for (let i = all.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [all[i], all[j]] = [all[j], all[i]];
+            }
+            let examQuestions = all.slice(0, 50); // 模擬考抽50題
+
+            examTimeLeft = 3000; // 50分鐘
+            updateTimerDisplay();
+            examTimer = setInterval(() => {
+                examTimeLeft--;
+                updateTimerDisplay();
+                if (examTimeLeft <= 0) {
+                    clearInterval(examTimer);
+                    alert("考試時間到！系統已自動交卷。");
+                }
+            }, 1000);
+
+            document.getElementById('status-text').innerText = `模擬考試 (50題)`;
+            renderQuestionList(examQuestions, true);
+        }
+
+        function updateTimerDisplay() {
+            let m = Math.floor(examTimeLeft / 60);
+            let s = examTimeLeft % 60;
+            document.getElementById('timer-text').innerText = `⏱ 剩餘時間：${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        /* 5. 錯題本 */
+        function getWrongIds() {
+            return JSON.parse(localStorage.getItem('emt2_wrong_qs') || '[]');
+        }
+
+        function saveWrongId(id) {
+            let list = getWrongIds();
+            if (!list.includes(id)) {
+                list.push(id);
+                localStorage.setItem('emt2_wrong_qs', JSON.stringify(list));
+            }
+        }
+
+        function removeWrongId(id) {
+            let list = getWrongIds().filter(i => i !== id);
+            localStorage.setItem('emt2_wrong_qs', JSON.stringify(list));
+        }
+
+        function renderWrongQuiz() {
+            let wrongIds = getWrongIds();
+            let all = getAllQuestions();
+            let wrongQuestions = all.filter(q => wrongIds.includes(q.id));
+
+            document.getElementById('status-text').innerText = `錯題本 - 共 ${wrongQuestions.length} 題`;
+            document.getElementById('timer-text').innerText = "";
+
+            if (wrongQuestions.length === 0) {
+                document.getElementById('content-view').innerHTML = "<p style='text-align:center; color:#888; padding:30px;'>🎉 太棒了！目前沒有任何錯題紀錄。</p>";
+                return;
+            }
+
+            renderQuestionList(wrongQuestions, false);
+
+            let clearBtn = document.createElement('button');
+            clearBtn.className = "action-btn clear-btn";
+            clearBtn.innerText = "清空所有錯題紀錄";
+            clearBtn.onclick = () => {
+                if (confirm("確定要清空所有錯題嗎？")) {
+                    localStorage.removeItem('emt2_wrong_qs');
+                    renderWrongQuiz();
+                }
+            };
+            document.getElementById('content-view').appendChild(clearBtn);
+        }
+
+        /* 通用題目渲染邏輯 */
+        function renderQuestionList(questions, isExam) {
+            let view = document.getElementById('content-view');
+            view.className = "";
+            view.innerHTML = "";
+
+            if (questions.length === 0) {
+                view.innerHTML = "<p style='text-align:center; color:#888; padding:20px;'>暫無題目。</p>";
+                return;
+            }
+
+            questions.forEach((q, qIdx) => {
+                let card = document.createElement('div');
+                card.className = "question-card";
+
+                let title = document.createElement('div');
+                title.className = "question-title";
+                title.innerText = `${qIdx + 1}. ${q.question}`;
+                card.appendChild(title);
+
+                let expBox = document.createElement('div');
+                expBox.className = "explanation";
+                expBox.style.display = "none";
+
+                q.options.forEach((opt, optIdx) => {
+                    let btn = document.createElement('button');
+                    btn.className = "option-btn";
+                    btn.innerText = opt;
+                    btn.onclick = function() {
+                        let allBtns = card.querySelectorAll('.option-btn');
+                        allBtns.forEach(b => b.disabled = true);
+
+                        if (optIdx === q.answer) {
+                            btn.classList.add('correct');
+                            if (currentMode === 'wrong') removeWrongId(q.id);
+                        } else {
+                            btn.classList.add('wrong');
+                            allBtns[q.answer].classList.add('correct');
+                            saveWrongId(q.id);
+                        }
+
+                        if (q.explanation && !isExam) {
+                            expBox.innerHTML = `<strong>解析：</strong> ${q.explanation}`;
+                            expBox.style.display = "block";
+                        }
+                    };
+                    card.appendChild(btn);
+                });
+
+                card.appendChild(expBox);
+                view.appendChild(card);
+            });
         }
 
         window.onload = initApp;
