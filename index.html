@@ -99,10 +99,10 @@
                 let opt = document.createElement('option');
                 opt.value = index;
                 
-                // 取得原始標題，無標題則自動生成
+                // 取得原始標題
                 let rawTitle = ch.title || (`第 ${ch.chapter_num || (index + 1)} 章 (${ch.question_count || 0}題)`);
                 
-                // 去除「第一部份：」、「第二部分：」等文字前綴
+                // 清除選單文字中的「第一部份：/ 第一部分：」
                 let cleanTitle = rawTitle.replace(/^第[一二三四五六七八九十0-9]+部[份分][：:]\s*/, '');
 
                 opt.innerText = cleanTitle;
@@ -118,6 +118,12 @@
             
             let ch = window.EMT2_DATA.chapters[index];
             let rawMd = ch.notes_markdown || "本章節無重點整理內容。";
+
+            // 1. 去除內文內出現的「第一部分：/ 第一部份：」文字
+            rawMd = rawMd.replace(/第[一二三四五六七八九十0-9]+部[份分][：:]\s*/g, '');
+
+            // 2. 將包含 $\rightarrow$ 的 LaTeX 箭頭轉換為好看的箭頭符號 ➔
+            rawMd = rawMd.replace(/\$\\rightarrow\$/g, ' ➔ ');
 
             if (typeof marked !== 'undefined') {
                 document.getElementById('content').innerHTML = marked.parse(rawMd);
