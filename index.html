@@ -24,7 +24,6 @@
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        h1 { font-size: 20px; text-align: center; color: #32e6e2; margin-top: 0; }
         select {
             width: 100%;
             padding: 10px;
@@ -79,7 +78,6 @@
 </head>
 <body>
     <div class="container">
-        <h1>EMT-2 題庫自主測驗系統</h1>
         <select id="chapter-select" onchange="switchChapter()">
             <option value="">載入章節中...</option>
         </select>
@@ -100,8 +98,14 @@
             chapters.forEach((ch, index) => {
                 let opt = document.createElement('option');
                 opt.value = index;
-                // 若未指定 title，退回使用章節編號與題數
-                opt.innerText = ch.title || (`第 ${ch.chapter_num || (index + 1)} 章 (${ch.question_count || 0}題)`);
+                
+                // 取得原始標題，無標題則自動生成
+                let rawTitle = ch.title || (`第 ${ch.chapter_num || (index + 1)} 章 (${ch.question_count || 0}題)`);
+                
+                // 去除「第一部份：」、「第二部分：」等文字前綴
+                let cleanTitle = rawTitle.replace(/^第[一二三四五六七八九十0-9]+部[份分][：:]\s*/, '');
+
+                opt.innerText = cleanTitle;
                 select.appendChild(opt);
             });
 
